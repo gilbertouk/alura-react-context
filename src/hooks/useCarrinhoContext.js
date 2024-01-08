@@ -1,13 +1,27 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { CarrinhoContext } from '@/context/CarrinhoContext';
 
 export const useCarrinhoContext = () => {
-  const { carrinho, setCarrinho } = useContext(CarrinhoContext);
+  const {
+    carrinho,
+    setCarrinho,
+    quantidade,
+    setQuantidade,
+    valorTotal,
+    setValorTotal,
+  } = useContext(CarrinhoContext);
+
+  const mudarQuantidade = (id, quantidade) => {
+    return carrinho.map((itemDoCarrinho) => {
+      if (itemDoCarrinho.id === id) itemDoCarrinho.quantidade += quantidade;
+      return itemDoCarrinho;
+    });
+  };
 
   const adicionarProduto = (novoProduto) => {
-    const temOProduto = carrinho.some((itemDoCarrinho) => {
-      itemDoCarrinho.id === novoProduto.id;
-    });
+    const temOProduto = carrinho.some(
+      (itemDoCarrinho) => itemDoCarrinho.id === novoProduto.id,
+    );
 
     if (!temOProduto) {
       novoProduto.quantidade = 1;
@@ -17,15 +31,9 @@ export const useCarrinhoContext = () => {
       ]);
     }
 
-    setCarrinho((carrinhoAnterior) => {
-      carrinhoAnterior.map((itemDoCarrinho) => {
-        if (itemDoCarrinho.id === novoProduto.id) {
-          itemDoCarrinho.quantidade += 1;
-        }
+    const carrinhoAtualizado = mudarQuantidade(novoProduto.id, 1);
 
-        return itemDoCarrinho;
-      });
-    });
+    setCarrinho([...carrinhoAtualizado]);
   };
 
   const removerProduto = (id) => {
@@ -38,18 +46,42 @@ export const useCarrinhoContext = () => {
       );
     }
 
-    setCarrinho((carrinhoAnterior) =>
-      carrinhoAnterior.map((itemDoCarrinho) => {
-        if (itemDoCarrinho.id === id) itemDoCarrinho.quantidade -= 1;
-        return itemDoCarrinho;
-      }),
-    );
+    const carrinhoAtualizado = mudarQuantidade(id, -1);
+
+    setCarrinho([...carrinhoAtualizado]);
   };
+
+  const removerProdutoCarrinho = (id) => {
+    const produtos = carrinho.filter(
+      (itemDoCarrinho) => itemDoCarrinho.id !== id,
+    );
+
+    setCarrinho(produtos);
+  };
+
+  useEffect(() => {
+    const { totalTemp, quantidadeTemp } = carrinho.reduce(
+      (acumulador, produto) => ({
+        quantidadeTemp: acumulador.quantidadeTemp + produto.quantidade,
+        totalTemp: acumulador.totalTemp + produto.preco * produto.quantidade,
+      }),
+      {
+        quantidadeTemp: 0,
+        totalTemp: 0,
+      },
+    );
+
+    setQuantidade(quantidadeTemp);
+    setValorTotal(totalTemp);
+  }, [carrinho]);
 
   return {
     carrinho,
     setCarrinho,
     adicionarProduto,
     removerProduto,
+    removerProdutoCarrinho,
+    valorTotal,
+    quantidade,
   };
 };
